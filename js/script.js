@@ -1,11 +1,11 @@
 'use strict';
 window.addEventListener('DOMContentLoaded', () => {
-//tabs
+	//tabs
 	const tabs = document.querySelectorAll('.tabheader__item'),
 		tabContent = document.querySelectorAll('.tabcontent'),
 		tabsParent = document.querySelector('.tabheader__items');
-	
-	
+
+
 	function hideTabContent() {
 		tabContent.forEach(item => {
 			item.classList.add('hide');
@@ -14,13 +14,13 @@ window.addEventListener('DOMContentLoaded', () => {
 		tabs.forEach(tab => {
 			tab.classList.remove('tabheader__item_active');
 		});
-	} 
+	}
 
 	function showTabContent(i = 0) {
 		tabContent[i].classList.add('show', 'fade');
 		tabContent[i].classList.remove('hide');
 		tabs[i].classList.add('tabheader__item_active');
-		
+
 	}
 
 	hideTabContent();
@@ -46,15 +46,16 @@ window.addEventListener('DOMContentLoaded', () => {
 			hours = Math.floor(time / (1000 * 60 * 60) % 24),
 			minutes = Math.floor(time / (1000 * 60) % 60),
 			seconds = Math.floor(time / (1000) % 60);
-		
+
 		return {
 			'total': time,
 			'days': days,
 			'hours': hours,
 			'minutes': minutes,
 			'seconds': seconds
-		};		
+		};
 	}
+
 	function getZero(num) {
 		if (num >= 0 && num < 10) {
 			return `0${num}`;
@@ -70,9 +71,9 @@ window.addEventListener('DOMContentLoaded', () => {
 			minutes = timer.querySelector('#minutes'),
 			seconds = timer.querySelector('#seconds'),
 			timeInterval = setInterval(apdateClock, 1000);
-		
+
 		apdateClock();
-		
+
 		function apdateClock() {
 			const t = getTimeRemaining(endTime);
 
@@ -90,4 +91,53 @@ window.addEventListener('DOMContentLoaded', () => {
 
 	setClock('.timer', deadLine);
 
-}); 
+	//modal window
+
+	const openModalBtn = document.querySelectorAll('[data-modal]'),
+		closeModalBtn = document.querySelector('[data-close]'),
+		modal = document.querySelector('.modal');
+
+	function openModal() {
+		modal.classList.toggle('show');
+		document.body.style.overflow = 'hidden';
+		clearInterval(modalTimerId);
+	}
+
+	openModalBtn.forEach(item => {
+		item.addEventListener('click', openModal);
+	});
+
+
+
+	function closeModal() {
+		modal.classList.toggle('show');
+		document.body.style.overflow = '';
+	}
+
+	closeModalBtn.addEventListener('click', closeModal);
+
+	modal.addEventListener('click', (event) => {
+		if (event.target === modal) {
+			closeModal();
+		}
+	});
+
+	document.addEventListener('keydown', (e) => {
+		if (e.code === 'Escape' && modal.classList.contains('show')) {
+			closeModal();
+		}
+	});
+
+
+	const modalTimerId = setTimeout(openModal, 7000);
+
+	function showmodalByScrol() {
+		if (window.pageYOffset + document.documentElement.clientHeight >= document.documentElement.scrollHeight - 1) {
+			openModal();	
+			window.removeEventListener('scroll', showmodalByScrol);
+		}
+		
+	}
+
+	window.addEventListener('scroll', showmodalByScrol);
+});

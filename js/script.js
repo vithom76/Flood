@@ -85,9 +85,9 @@ window.addEventListener('DOMContentLoaded', () => {
 			if (t.total <= 0) {
 				clearInterval(timeInterval);
 				days.innerHTML = '';
-			hours.innerHTML = '';
-			minutes.innerHTML = '';
-			seconds.innerHTML = '';
+				hours.innerHTML = '';
+				minutes.innerHTML = '';
+				seconds.innerHTML = '';
 			}
 		}
 
@@ -98,11 +98,12 @@ window.addEventListener('DOMContentLoaded', () => {
 	//modal window
 
 	const openModalBtn = document.querySelectorAll('[data-modal]'),
-		closeModalBtn = document.querySelector('[data-close]'),
+		//closeModalBtn = document.querySelector('[data-close]'),
 		modal = document.querySelector('.modal');
 
 	function openModal() {
-		modal.classList.toggle('show');
+		//modal.classList.toggle('show');
+		modal.classList.add('show');
 		document.body.style.overflow = 'hidden';
 		clearInterval(modalTimerId);
 	}
@@ -118,10 +119,10 @@ window.addEventListener('DOMContentLoaded', () => {
 		document.body.style.overflow = '';
 	}
 
-	closeModalBtn.addEventListener('click', closeModal);
+	//closeModalBtn.addEventListener('click', closeModal);
 
 	modal.addEventListener('click', (event) => {
-		if (event.target === modal) {
+		if (event.target === modal || event.target.getAttribute('data-close') =='') { //закрытие модалки при клике на подложку или на крестик
 			closeModal();
 		}
 	});
@@ -133,22 +134,22 @@ window.addEventListener('DOMContentLoaded', () => {
 	});
 
 
-	const modalTimerId = setTimeout(openModal, 7000);
+	const modalTimerId = setTimeout(openModal, 50000);
 
 	function showmodalByScrol() {
 		if (window.pageYOffset + document.documentElement.clientHeight >= document.documentElement.scrollHeight - 1) {
-			openModal();	
+			openModal();
 			window.removeEventListener('scroll', showmodalByScrol);
 		}
-		
+
 	}
 
 	window.addEventListener('scroll', showmodalByScrol);
 
 	//Используем классы для карточек
-	
-	class CardMenu{
-		constructor(src, alt, title, descr, price, parentSelector, ...classes ){
+
+	class CardMenu {
+		constructor(src, alt, title, descr, price, parentSelector, ...classes) {
 			this.src = src;
 			this.alt = alt;
 			this.title = title;
@@ -159,7 +160,7 @@ window.addEventListener('DOMContentLoaded', () => {
 			this.transfer = 27;
 			this.changeToUah();
 		}
-		changeToUah(){
+		changeToUah() {
 			this.price = this.price * this.transfer;
 		}
 		render() {
@@ -172,8 +173,8 @@ window.addEventListener('DOMContentLoaded', () => {
 					element.classList.add(className);
 				});
 			}
-			
-				element.innerHTML = `				
+
+			element.innerHTML = `				
 					<img src=${this.src} alt=${this.alt}>
 					<h3 class="menu__item-subtitle">${this.title}</h3>
 					<div class="menu__item-descr">${this.descr}</div>
@@ -183,8 +184,8 @@ window.addEventListener('DOMContentLoaded', () => {
 						<div class="menu__item-total"><span>${this.price}</span> грн/день</div>
 					</div>				
 				`;
-			this.parent.append(element);		
-			console.log(this.parent);
+			this.parent.append(element);
+			
 		}
 	}
 
@@ -194,9 +195,9 @@ window.addEventListener('DOMContentLoaded', () => {
 		'Меню "Фитнес"',
 		'Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих овощей и фруктов.Продукт активных и здоровых людей.Это абсолютно новый продукт с оптимальной ценой и	высоким качеством!',
 		9,
-		'.menu .container'		
+		'.menu .container'
 	).render();
-	
+
 	new CardMenu(
 		"img/tabs/elite.jpg",
 		"elite",
@@ -216,4 +217,112 @@ window.addEventListener('DOMContentLoaded', () => {
 		'.menu .container',
 		'menu__item'
 	).render();
+
+	// Forms
+
+	const forms = document.querySelectorAll('form');
+	
+	const massage = {
+		loading: 'img/form/spinner.svg',
+		secces: 'Спасибо. Мы скоро с вами свяжимся',
+		failure: 'Что-то пошло не так'
+	};
+
+	function postData(form) {
+		form.addEventListener('submit', (e) => {
+			e.preventDefault();
+
+			const statusMassage = document.createElement('img');
+			statusMassage.src = massage.loading;
+			statusMassage.style.cssText = 'display:block; margin: 0 auto';
+			//form.append(statusMassage);
+			form.insertAdjacentElement('afterend', statusMassage);
+			//showThanksModal(massage.loading);
+			
+			//const request = new XMLHttpRequest(); старый способ общения с сервером
+			//request.open('POST', 'server.php');
+			//request.setRequestHeader('content-type', 'multipart/form-data'); при испльзовании form-data заголовок устанавливать не нужно
+			//request.setRequestHeader('content-type', 'multipart/form-json'); заголовок JSON формата
+			const formData = new FormData(form);
+			const obj = { };
+			formData.forEach((value, key) => {    // получение объекта и данных формы. У данных формы свой спецефический объект
+				obj[key] = value;
+			});
+
+		
+
+			//request.send(formData);  //в обычном формате
+			//request.send(json);        // в формате json 
+
+			fetch('server.php', {
+				method: "POST",
+				//body: formData, отправка в простом формате
+				body: JSON.stringify(obj),
+				headers: {
+					'content-type': 'multipart/form-json'
+				}
+			})
+				.then(data => data.text()) 				
+				.then(data => {
+				console.log(data);
+				showThanksModal(massage.secces);
+				statusMassage.remove();
+			})
+				.catch(() => {
+					showThanksModal(massage.failure);
+				})
+				.finally(() => {
+					form.reset();
+				});
+
+			/* request.addEventListener('load', ()=> {
+				if (request.status === 200) {
+					//statusMassage.textContent = massage.secces;					
+					console.log(request.response);
+					showThanksModal(massage.secces);
+					form.reset();
+					statusMassage.remove();				
+				} else {
+					showThanksModal(massage.failure);
+					statusMassage.remove();
+				}
+			}); */
+
+		});
+	}
+
+	forms.forEach((form) => {
+		postData(form);
+	});
+
+	function showThanksModal(message) {              //отображение модалки статуса отправки формы
+		const prevModalDialog = document.querySelector('.modal__dialog');
+
+		prevModalDialog.classList.add('hide');
+
+		openModal();
+
+		const thanksModal = document.createElement('div');
+		thanksModal.classList.add('modal__dialog');
+		thanksModal.innerHTML = `
+		<div class="modal__content">
+			  <div class="modal__close" data-close>×</div>
+			  <div class="modal__title">${message}</div>
+		</div>
+		`;
+
+		document.querySelector('.modal').append(thanksModal);
+		setTimeout(() => {
+			thanksModal.remove();
+			//prevModalDialog.classList.add('show');
+			prevModalDialog.classList.remove('hide');
+			closeModal();
+		}, 4000);
+
+	}
+	
+	fetch('http://localhost:3000/menu')
+		.then(data => data.json())
+		.then(res => console.log(res));
+
 });

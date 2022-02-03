@@ -122,7 +122,7 @@ window.addEventListener('DOMContentLoaded', () => {
 	//closeModalBtn.addEventListener('click', closeModal);
 
 	modal.addEventListener('click', (event) => {
-		if (event.target === modal || event.target.getAttribute('data-close') =='') { //закрытие модалки при клике на подложку или на крестик
+		if (event.target === modal || event.target.getAttribute('data-close') == '') { //закрытие модалки при клике на подложку или на крестик
 			closeModal();
 		}
 	});
@@ -185,117 +185,91 @@ window.addEventListener('DOMContentLoaded', () => {
 					</div>				
 				`;
 			this.parent.append(element);
-			
+
 		}
 	}
 
-	new CardMenu(
-		"img/tabs/vegy.jpg",
-		"vegy",
-		'Меню "Фитнес"',
-		'Меню "Фитнес" - это новый подход к приготовлению блюд: больше свежих овощей и фруктов.Продукт активных и здоровых людей.Это абсолютно новый продукт с оптимальной ценой и	высоким качеством!',
-		9,
-		'.menu .container'
-	).render();
+	const getData = async (url) => {
+		const res = await fetch(url);
+		if (!res.ok) {
+			throw new Error(`Could not fetch ${url}, status:  ${res.status}`);
+		}
+		return await res.json();
+	};
 
-	new CardMenu(
-		"img/tabs/elite.jpg",
-		"elite",
-		'Меню “Премиум”',
-		'В меню “Премиум” мы используем не только красивый дизайн упаковки, но икачественное исполнение блюд. Красная рыба, морепродукты, фрукты - ресторанное меню без похода в ресторан!',
-		20,
-		'.menu .container',
-		'menu__item'
-	).render();
+	getData('http://localhost:3000/menu').
+	then((data) => {
+		data.forEach(({
+			img,
+			altimg,
+			title,
+			descr,
+			price
+		}) => {
+			new CardMenu(img, altimg, title, descr, price, '.menu .container').render();
+		});
+	});
 
-	new CardMenu(
-		"img/tabs/post.jpg",
-		"post",
-		'Меню "Постное"',
-		'Меню “Постное” - это тщательный подбор ингредиентов: полное отсутствие	продуктов животного происхождения, молоко из миндаля, овса, кокоса или гречки, правильное количество	белков за счет тофу и импортных вегетарианских стейков.',
-		15,
-		'.menu .container',
-		'menu__item'
-	).render();
+
 
 	// Forms
 
 	const forms = document.querySelectorAll('form');
-	
+
 	const massage = {
 		loading: 'img/form/spinner.svg',
 		secces: 'Спасибо. Мы скоро с вами свяжимся',
 		failure: 'Что-то пошло не так'
 	};
 
-	function postData(form) {
+	const postData = async (url, data) => {
+		const res = await fetch(url, {
+			method: "POST",
+			body: data,
+			headers: {
+				'content-type': 'application/json'
+			}
+		});
+		return await res.json();
+	};
+
+
+
+	function bindPostData(form) {
 		form.addEventListener('submit', (e) => {
 			e.preventDefault();
 
 			const statusMassage = document.createElement('img');
 			statusMassage.src = massage.loading;
 			statusMassage.style.cssText = 'display:block; margin: 0 auto';
-			//form.append(statusMassage);
+
 			form.insertAdjacentElement('afterend', statusMassage);
-			//showThanksModal(massage.loading);
-			
-			//const request = new XMLHttpRequest(); старый способ общения с сервером
-			//request.open('POST', 'server.php');
-			//request.setRequestHeader('content-type', 'multipart/form-data'); при испльзовании form-data заголовок устанавливать не нужно
-			//request.setRequestHeader('content-type', 'multipart/form-json'); заголовок JSON формата
+
 			const formData = new FormData(form);
-			const obj = { };
-			formData.forEach((value, key) => {    // получение объекта и данных формы. У данных формы свой спецефический объект
-				obj[key] = value;
-			});
 
-		
+			const json = JSON.stringify(Object.fromEntries(formData.entries()));
 
-			//request.send(formData);  //в обычном формате
-			//request.send(json);        // в формате json 
-
-			fetch('server.php', {
-				method: "POST",
-				//body: formData, отправка в простом формате
-				body: JSON.stringify(obj),
-				headers: {
-					'content-type': 'multipart/form-json'
-				}
-			})
-				.then(data => data.text()) 				
+			postData('http://localhost:3000/requests', json)
 				.then(data => {
-				console.log(data);
-				showThanksModal(massage.secces);
-				statusMassage.remove();
-			})
+					console.log(data);
+					showThanksModal(massage.secces);
+					//statusMassage.remove();
+				})
 				.catch(() => {
 					showThanksModal(massage.failure);
 				})
 				.finally(() => {
 					form.reset();
-				});
-
-			/* request.addEventListener('load', ()=> {
-				if (request.status === 200) {
-					//statusMassage.textContent = massage.secces;					
-					console.log(request.response);
-					showThanksModal(massage.secces);
-					form.reset();
-					statusMassage.remove();				
-				} else {
-					showThanksModal(massage.failure);
 					statusMassage.remove();
-				}
-			}); */
-
+				});
 		});
 	}
 
 	forms.forEach((form) => {
-		postData(form);
+		bindPostData(form);
 	});
 
-	function showThanksModal(message) {              //отображение модалки статуса отправки формы
+	function showThanksModal(message) { //отображение модалки статуса отправки формы
 		const prevModalDialog = document.querySelector('.modal__dialog');
 
 		prevModalDialog.classList.add('hide');
@@ -318,11 +292,56 @@ window.addEventListener('DOMContentLoaded', () => {
 			prevModalDialog.classList.remove('hide');
 			closeModal();
 		}, 4000);
-
 	}
+	// Slider	
+	const slides = document.querySelectorAll('.offer__slide'),
+		next = document.querySelector('.offer__slider-next'),
+		prev = document.querySelector('.offer__slider-prev'),
+		total = document.querySelector('#total'),
+		current = document.querySelector('#current');
+	let slideIndex = 1;
+
+	showSlide(slideIndex);
+
+	if (slides.length < 10) {
+		total.innerHTML = `0${slides.length}`;
+	} else {
+		total.innerHTML = slides.length;
+	}
+		
+
 	
-	fetch('http://localhost:3000/menu')
-		.then(data => data.json())
-		.then(res => console.log(res));
+	function showSlide(n) {
+		if (n > slides.length) {
+			slideIndex = 1;
+		}
+		if (n < 1) {
+			slideIndex = slides.length;
+		}
+		slides.forEach((item) => {
+			item.style.display = 'none';
+		});
+		slides[slideIndex - 1].style.display = 'block';
+		
+		if (slides.length < 10) {
+			current.innerHTML = `0${slideIndex}`;
+		} else {
+			current.innerHTML = `${slideIndex}`;
+		}
+		
+	}
+
+	function plusSlide(n) {
+		showSlide(slideIndex += n);
+}
+	
+prev.addEventListener('click', () => {
+	plusSlide(-1);
+});
+
+next.addEventListener('click', () => {
+	plusSlide(+1);
+	});
+
 
 });
